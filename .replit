@@ -34,3 +34,6 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd /home/runner/work && pip install pygame numpy && python main.py"
+
+[agent]
+expertMode = true
