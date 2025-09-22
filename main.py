@@ -146,9 +146,6 @@ def can_move(x, y):
     # The rover can move to (x, y) if it's inside the map boundaries
     # AND the tile at that position in the 'map' list is a floor (value 0).
     # Hint: The map is accessed with map[y][x].
-    # Check if the position is within map boundaries first
-    if x < 0 or x >= MAP_WIDTH or y < 0 or y >= MAP_HEIGHT:
-        return False
     # Check if the tile is a floor (0) or a wall (1)
     if map[y][x] == 1:
         return False
@@ -245,6 +242,7 @@ def wall_follower_step():
 def random_mouse_step():
     """Perform one step of the random mouse maze solving algorithm."""
     global algorithm_steps
+    import random
     
     # Get all possible directions we can move
     valid_directions = []
