@@ -2,6 +2,7 @@
 
 import pygame
 import sys
+import random
 
 # Initialize Pygame
 pygame.init()
@@ -128,6 +129,7 @@ drawing_mode = True
 algorithm_running = False
 game_won = False
 algorithm_steps = 0
+current_algorithm = "wall_follower"  # "wall_follower" or "random_mouse"
 
 # STEP 7: Create a list of direction vectors and their names.
 # Direction vectors: (dx, dy) for North, East, South, West
@@ -144,6 +146,9 @@ def can_move(x, y):
     # The rover can move to (x, y) if it's inside the map boundaries
     # AND the tile at that position in the 'map' list is a floor (value 0).
     # Hint: The map is accessed with map[y][x].
+    # Check if the position is within map boundaries first
+    if x < 0 or x >= MAP_WIDTH or y < 0 or y >= MAP_HEIGHT:
+        return False
     # Check if the tile is a floor (0) or a wall (1)
     if map[y][x] == 1:
         return False
@@ -237,6 +242,53 @@ def wall_follower_step():
     algorithm_steps += 1
 
 
+def random_mouse_step():
+    """Perform one step of the random mouse maze solving algorithm."""
+    global algorithm_steps
+    
+    # Get all possible directions we can move
+    valid_directions = []
+    
+    for direction_index in range(4):  # Check all 4 directions
+        dx, dy = directions[direction_index]
+        new_x = rover_x + dx
+        new_y = rover_y + dy
+        
+        # Check if this direction is valid (not a wall)
+        if can_move(new_x, new_y):
+            valid_directions.append(direction_index)
+    
+    if not valid_directions:
+        # If we're completely stuck, just turn in place
+        turn_right()
+        algorithm_steps += 1
+        return
+    
+    # Smart random selection: prefer directions that don't go backwards
+    preferred_directions = []
+    backwards_direction = (rover_direction + 2) % 4  # Opposite of current direction
+    
+    for direction in valid_directions:
+        if direction != backwards_direction:
+            preferred_directions.append(direction)
+    
+    # Choose direction: prefer non-backwards moves, but allow backwards if that's all we have
+    if preferred_directions:
+        chosen_direction = random.choice(preferred_directions)
+    else:
+        chosen_direction = random.choice(valid_directions)
+    
+    # Turn to face the chosen direction
+    while rover_direction != chosen_direction:
+        turn_right()
+    
+    # Move in the chosen direction
+    dx, dy = directions[rover_direction]
+    move_rover(dx, dy)
+    
+    algorithm_steps += 1
+
+
 # ==============================================================================
 #  BELOW THIS LINE IS THE GAME ENGINE AND DRAWING CODE.
 #  You don't need to change anything here for the workshop.
@@ -320,7 +372,7 @@ def draw_ui():
         screen.blit(text1, (10, 10))
 
         text2 = font.render(
-            "SPACE: Toggle Algorithm | R: Reset | E: Drawing mode", True,
+            "SPACE: Toggle Algorithm | A: Switch Algorithm | R: Reset | E: Drawing mode", True,
             WHITE)
         screen.blit(text2, (10, 35))
 
@@ -328,6 +380,10 @@ def draw_ui():
             f"Pos: ({rover_x},{rover_y}) Dir: {direction_names[rover_direction]}",
             True, WHITE)
         screen.blit(info, (500, 10))
+        
+        algorithm_name = "Wall Follower" if current_algorithm == "wall_follower" else "Random Mouse"
+        algorithm_text = font.render(f"Algorithm: {algorithm_name}", True, WHITE)
+        screen.blit(algorithm_text, (500, 35))
 
         if algorithm_running:
             steps_text = font.render(f"Steps: {algorithm_steps}", True, WHITE)
@@ -343,7 +399,7 @@ def draw_ui():
 
 def reset_game():
     """Reset the rover to start position"""
-    global rover_x, rover_y, rover_direction, rover_trail, game_won, algorithm_running, algorithm_steps
+    global rover_x, rover_y, rover_direction, rover_trail, game_won, algorithm_running, algorithm_steps, current_algorithm
     rover_x = 1
     rover_y = 1
     rover_direction = 0
@@ -351,6 +407,7 @@ def reset_game():
     game_won = False
     algorithm_running = False
     algorithm_steps = 0
+    # Keep the current_algorithm setting - don't reset it so user can keep their preference
 
 
 # Main game loop
@@ -394,6 +451,14 @@ while running:
                 # Algorithm controls
                 if event.key == pygame.K_SPACE:
                     algorithm_running = not algorithm_running
+                
+                # Switch algorithm
+                if event.key == pygame.K_a:
+                    if current_algorithm == "wall_follower":
+                        current_algorithm = "random_mouse"
+                    else:
+                        current_algorithm = "wall_follower"
+                    algorithm_steps = 0  # Reset step counter when switching algorithms
 
                 # Reset
                 if event.key == pygame.K_r:
@@ -451,7 +516,10 @@ while running:
 
     # Run algorithm
     if algorithm_running and not game_won and current_time - last_algorithm_time > 200:
-        wall_follower_step()
+        if current_algorithm == "wall_follower":
+            wall_follower_step()
+        else:  # random_mouse
+            random_mouse_step()
         last_algorithm_time = current_time
 
     # Check win condition
