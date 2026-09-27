@@ -190,4 +190,4 @@ If you've finished, try these extra challenges!
 - If not, can you explain why?​
 
 - Can you think any better approaches than wall follower?
-  > **HINT**: It's in the name
+  > **HINT**: It's in the name# ywiad_maze
